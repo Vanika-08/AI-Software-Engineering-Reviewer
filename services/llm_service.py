@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
-
 load_dotenv()
 
 
@@ -17,9 +16,13 @@ class LLMService:
 
     def review(self, prompt):
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
+        try:
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
 
-        return response.text
+            return response.text
+
+        except Exception as e:
+            return f"AI Review generation failed: {str(e)}"

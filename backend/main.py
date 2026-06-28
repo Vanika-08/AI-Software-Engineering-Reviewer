@@ -5,8 +5,20 @@ from datetime import datetime
 import shutil
 from agents.project_reader import ProjectReader
 from agents.review_coordinator import ReviewCoordinator
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -43,3 +55,12 @@ async def upload_project(file: UploadFile = File(...)):
         **report,
         "total_files": len(project_files),
     }
+
+@app.get("/download-report")
+def download_report():
+
+    return FileResponse(
+        "review_report.pdf",
+        media_type="application/pdf",
+        filename="AI_Review_Report.pdf"
+    )

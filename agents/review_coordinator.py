@@ -11,6 +11,7 @@ from review.prompt_builder import PromptBuilder
 from services.llm_service import LLMService
 from services.embedding_service import EmbeddingService
 from services.vector_store import VectorStore
+from review.report_generator import ReportGenerator
 
 class ReviewCoordinator:
     def __init__(self, project_files, extract_folder):
@@ -71,7 +72,7 @@ class ReviewCoordinator:
         results = vector_store.search(query_embedding)
 
         context = "\n\n".join(results["documents"][0])
-        
+
         report = {
             "technologies": technologies,
             "structure": structure,
@@ -91,7 +92,19 @@ class ReviewCoordinator:
 
         ai_review = llm.review(prompt)
 
-        report["total_chunks"] = len(chunks)
         report["ai_review"] = ai_review
+
+        print("CALLING REPORT GENERATOR")
+
+        generator = ReportGenerator()
+
+        generator.generate(
+            report,
+            "review_report.pdf"
+        )
+
+        print("PDF GENERATED")
+
+        report["total_chunks"] = len(chunks)
 
         return report
