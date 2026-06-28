@@ -33,11 +33,6 @@ async def upload_project(file: UploadFile = File(...)):
 
     project_files = reader.read_project_files()
 
-    for file in project_files:
-        print(file["path"])
-
-    print(project_files)
-
     coordinator = ReviewCoordinator(project_files, extract_folder)
 
     report = coordinator.run()
@@ -47,5 +42,4 @@ async def upload_project(file: UploadFile = File(...)):
         "upload_id": upload_id,
         **report,
         "total_files": len(project_files),
-        "files": project_files[:5]
     }

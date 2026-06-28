@@ -5,6 +5,12 @@ from agents.security_detector import SecurityDetector
 from agents.architecture_detector import ArchitectureDetector
 from agents.performance_detector import PerformanceDetector
 from agents.best_practices_detector import BestPracticesDetector
+from agents.score_calculator import ScoreCalculator
+from agents.chunker import Chunker
+from review.prompt_builder import PromptBuilder
+from services.llm_service import LLMService
+from services.embedding_service import EmbeddingService
+from services.vector_store import VectorStore
 
 class ReviewCoordinator:
     def __init__(self, project_files, extract_folder):
@@ -35,12 +41,57 @@ class ReviewCoordinator:
         best_practices_detector = BestPracticesDetector(self.extract_folder)
         best_practices = best_practices_detector.detect()
 
-        return {
+        score_calculator = ScoreCalculator()
+
+        score = score_calculator.calculate(
+            quality,
+            security,
+            performance,
+            best_practices,
+            architecture
+        )
+
+        chunker = Chunker(self.project_files)
+        chunks = chunker.create_chunks()
+
+        context = chunks[0]
+
+        embedding_service = EmbeddingService()
+
+        embeddings = embedding_service.create_embeddings(chunks)
+
+        vector_store = VectorStore()
+
+        vector_store.store(chunks, embeddings)
+
+        query = "Review this project"
+
+        query_embedding = embedding_service.create_query_embedding(query)
+
+        results = vector_store.search(query_embedding)
+
+        context = "\n\n".join(results["documents"][0])
+        
+        report = {
             "technologies": technologies,
             "structure": structure,
             "quality": quality,
             "security": security,
-            "architecture": architecture,
             "performance": performance,
+            "architecture": architecture,
             "best_practices": best_practices,
+            "score": score
         }
+
+        prompt_builder = PromptBuilder()
+
+        prompt = prompt_builder.build(report, context)
+
+        llm = LLMService()
+
+        ai_review = llm.review(prompt)
+
+        report["total_chunks"] = len(chunks)
+        report["ai_review"] = ai_review
+
+        return report
