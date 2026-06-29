@@ -7,6 +7,7 @@ from agents.project_reader import ProjectReader
 from agents.review_coordinator import ReviewCoordinator
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from backend.database.review_store import ReviewStore
 
 app = FastAPI()
 app.add_middleware(
@@ -49,6 +50,10 @@ async def upload_project(file: UploadFile = File(...)):
 
     report = coordinator.run()
 
+    store = ReviewStore()
+
+    store.save(report)
+
     return {
         "message": "Project uploaded successfully",
         "upload_id": upload_id,
@@ -64,3 +69,10 @@ def download_report():
         media_type="application/pdf",
         filename="AI_Review_Report.pdf"
     )
+
+@app.get("/reviews")
+def get_reviews():
+
+    store = ReviewStore()
+
+    return store.get_all()
