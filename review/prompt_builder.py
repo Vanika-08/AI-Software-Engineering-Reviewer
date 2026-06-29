@@ -22,6 +22,18 @@ Quality:
 Performance:
 {report["performance"]}
 
+Complexity:
+{report["complexity"]}
+
+Duplicate Code:
+{report["duplicate_code"]}
+
+Dead Code:
+{report["dead_code"]}
+
+Naming Convention:
+{report["naming"]}
+
 Best Practices:
 {report["best_practices"]}
 

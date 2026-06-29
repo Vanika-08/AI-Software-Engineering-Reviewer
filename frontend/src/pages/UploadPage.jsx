@@ -10,6 +10,10 @@ import ArchitectureCard from "../components/ArchitectureCard";
 import AIReviewCard from "../components/AIReviewCard";
 import AnalyticsChart from "../components/AnalyticsChart";
 import LoadingSpinner from "../components/LoadingSpinner";
+import ComplexityCard from "../components/ComplexityCard";
+import DuplicateCodeCard from "../components/DuplicateCodeCard";
+import DeadCodeCard from "../components/DeadCodeCard";
+import NamingCard from "../components/NamingCard";
 import toast from "react-hot-toast";
 
 function UploadPage() {
@@ -18,46 +22,35 @@ function UploadPage() {
   const [result, setResult] = useState(null);
 
   const uploadProject = async () => {
-  if (!file) return;
+    if (!file) return;
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    toast.loading("Reviewing Project...", {
-      id: "upload",
-    });
-
-    const response = await api.post("/upload", formData);
-
-    setResult(response.data);
-
-    toast.success(
-      "Review Completed Successfully!",
-      {
+      toast.loading("Reviewing Project...", {
         id: "upload",
-      }
-    );
+      });
 
-  } catch (error) {
+      const response = await api.post("/upload", formData);
 
-    console.error(error);
+      setResult(response.data);
 
-    toast.error(
-      "Upload Failed",
-      {
+      toast.success("Review Completed Successfully!", {
         id: "upload",
-      }
-    );
+      });
+    } catch (error) {
+      console.error(error);
 
-  } finally {
-
-    setLoading(false);
-
-  }
-};
+      toast.error("Upload Failed", {
+        id: "upload",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container py-5">
@@ -130,6 +123,22 @@ function UploadPage() {
                 <div className="col-md-6">
                   <PerformanceCard performance={result.performance} />
                 </div>
+                <div className="col-md-6">
+                  <ComplexityCard complexity={result.complexity} />
+                </div>
+
+                <div className="col-md-6">
+                  <DuplicateCodeCard duplicateCode={result.duplicate_code} />
+                </div>
+
+                <div className="col-md-6">
+  <DeadCodeCard
+    deadCode={result.dead_code}
+  />
+</div>
+<div className="col-md-6">
+    <NamingCard naming={result.naming} />
+</div>
 
                 <div className="col-12">
                   <ArchitectureCard architecture={result.architecture} />

@@ -8,6 +8,10 @@ from agents.review_coordinator import ReviewCoordinator
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database.review_store import ReviewStore
+from pydantic import BaseModel
+
+class GithubRequest(BaseModel):
+    repo_url: str
 
 app = FastAPI()
 app.add_middleware(
@@ -91,3 +95,66 @@ def delete_review(review_id: str):
     return {
         "message": "Review deleted successfully"
     }
+
+@app.get("/stats")
+def get_stats():
+
+    store = ReviewStore()
+
+    reviews = store.get_all()
+
+    if not reviews:
+        return {
+            "total_reviews": 0,
+            "average_score": 0,
+            "best_score": 0,
+            "worst_score": 0,
+            "frontend": {},
+            "backend": {},
+            "database": {}
+        }
+
+    total_score = sum(
+        review["score"]["overall_score"]
+        for review in reviews
+    )
+
+    best_score = max(
+        review["score"]["overall_score"]
+        for review in reviews
+    )
+
+    worst_score = min(
+        review["score"]["overall_score"]
+        for review in reviews
+    )
+
+    frontend = {}
+    backend = {}
+    database = {}
+
+    for review in reviews:
+
+        technologies = review.get("technologies", {})
+
+        fe = technologies.get("frontend") or "Unknown"
+        be = technologies.get("backend") or "Unknown"
+        db = technologies.get("database") or "Unknown"
+
+        frontend[fe] = frontend.get(fe, 0) + 1
+        backend[be] = backend.get(be, 0) + 1
+        database[db] = database.get(db, 0) + 1
+
+    return {
+        "total_reviews": len(reviews),
+        "average_score": round(total_score / len(reviews), 2),
+        "best_score": best_score,
+        "worst_score": worst_score,
+        "frontend": frontend,
+        "backend": backend,
+        "database": database
+    }
+
+@app.post("/analyze-github")
+def analyze_github(request: GithubRequest):
+    pass

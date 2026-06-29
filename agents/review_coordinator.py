@@ -13,6 +13,10 @@ from services.embedding_service import EmbeddingService
 from services.vector_store import VectorStore
 from review.report_generator import ReportGenerator
 from review.ai_review_parser import AIReviewParser
+from agents.complexity_detector import ComplexityDetector
+from agents.duplicate_code_detector import DuplicateCodeDetector
+from agents.dead_code_detector import DeadCodeDetector
+from agents.naming_detector import NamingDetector
 
 class ReviewCoordinator:
     def __init__(self, project_files, extract_folder):
@@ -33,6 +37,18 @@ class ReviewCoordinator:
 
         security_detector = SecurityDetector(self.project_files)
         security = security_detector.detect()
+
+        complexity_detector = ComplexityDetector(self.project_files)
+        complexity = complexity_detector.detect()
+
+        duplicate_detector = DuplicateCodeDetector(self.project_files)
+        duplicate_code = duplicate_detector.detect()
+
+        dead_code_detector = DeadCodeDetector(self.project_files)
+        dead_code = dead_code_detector.detect()
+
+        naming_detector = NamingDetector(self.project_files)
+        naming = naming_detector.detect()
 
         architecture_detector = ArchitectureDetector(self.extract_folder)
         architecture = architecture_detector.detect()
@@ -55,6 +71,10 @@ class ReviewCoordinator:
             quality,
             security,
             performance,
+            complexity,
+            duplicate_code,
+            dead_code,
+            naming,
             best_practices,
             architecture
         )
@@ -85,6 +105,10 @@ class ReviewCoordinator:
             "structure": structure,
             "quality": quality,
             "security": security,
+            "complexity": complexity,
+            "duplicate_code": duplicate_code,
+            "dead_code": dead_code,
+            "naming": naming,
             "performance": performance,
             "architecture": architecture,
             "best_practices": best_practices,

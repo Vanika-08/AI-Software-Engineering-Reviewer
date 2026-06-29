@@ -113,6 +113,173 @@ class ReportGenerator:
             )
 
         elements.append(
+            Paragraph(
+                "<b>Complexity Findings</b>",
+                styles["Heading2"]
+            )
+        )
+
+        if report["complexity"]:
+
+            complexity_data = [
+                ["Issue", "IF", "Loops", "Returns", "File"]
+            ]
+
+            for issue in report["complexity"]:
+
+                complexity_data.append([
+                    issue["issue"],
+                    str(issue["if_count"]),
+                    str(issue["loop_count"]),
+                    str(issue["return_count"]),
+                    issue["file"]
+                ])
+
+            complexity_table = Table(complexity_data)
+
+            complexity_table.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.darkblue),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
+                ("GRID", (0,0), (-1,-1), 1, colors.black),
+                ("BACKGROUND", (0,1), (-1,-1), colors.beige),
+                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0,0), (-1,0), 8),
+            ]))
+
+            elements.append(complexity_table)
+
+        else:
+            elements.append(
+                Paragraph(
+                    "No complexity issues found.",
+                    styles["BodyText"]
+                )
+            )
+        
+        elements.append(
+            Paragraph(
+                "<b>Duplicate Code Findings</b>",
+                styles["Heading2"]
+            )
+        )
+
+        if report["duplicate_code"]:
+
+            duplicate_data = [
+                ["Similarity", "File 1", "File 2"]
+            ]
+
+            for item in report["duplicate_code"]:
+
+                duplicate_data.append([
+                    f'{item["similarity"]}%',
+                    item["file1"],
+                    item["file2"]
+                ])
+
+            duplicate_table = Table(duplicate_data)
+
+            duplicate_table.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.darkgreen),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
+                ("GRID", (0,0), (-1,-1), 1, colors.black),
+                ("BACKGROUND", (0,1), (-1,-1), colors.beige),
+                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0,0), (-1,0), 8),
+            ]))
+
+            elements.append(duplicate_table)
+
+        else:
+            elements.append(
+                Paragraph(
+                "No duplicate code detected.",
+                styles["BodyText"]
+                )
+            )
+        
+        elements.append(
+            Paragraph(
+                "<b>Dead Code Findings</b>",
+                styles["Heading2"]
+            )
+        )
+
+        if report["dead_code"]:
+
+            dead_data = [
+                ["Issue", "File"]
+            ]
+
+            for item in report["dead_code"]:
+
+                dead_data.append([
+                    item["issue"],
+                    item["file"]
+                ])
+
+            dead_table = Table(dead_data)
+
+            dead_table.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.orange),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
+                ("GRID", (0,0), (-1,-1), 1, colors.black),
+                ("BACKGROUND", (0,1), (-1,-1), colors.beige),
+                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0,0), (-1,0), 8),
+            ]))
+
+            elements.append(dead_table)
+
+        else:
+            elements.append(
+                Paragraph(
+                    "No dead code detected.",
+                    styles["BodyText"]
+                )
+            )
+        
+        elements.append(
+            Paragraph(
+                "<b>Naming Convention Findings</b>",
+                styles["Heading2"]
+            )
+        )
+
+        if report["naming"]:
+
+            naming_data = [["Issue", "Name", "File"]]
+
+            for item in report["naming"]:
+                naming_data.append([
+                    item["issue"],
+                    item["name"],
+                    item["file"]
+                ])
+
+            naming_table = Table(naming_data)
+
+            naming_table.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.darkcyan),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
+                ("GRID", (0,0), (-1,-1), 1, colors.black),
+                ("BACKGROUND", (0,1), (-1,-1), colors.beige),
+                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0,0), (-1,0), 8),
+            ]))
+
+            elements.append(naming_table)
+
+        else:
+
+            elements.append(
+                Paragraph(
+                    "No naming convention issues found.",
+                    styles["BodyText"]
+                )
+         )
+        
+        elements.append(
             Paragraph("<b>AI Review</b>", styles["Heading2"])
         )
 
