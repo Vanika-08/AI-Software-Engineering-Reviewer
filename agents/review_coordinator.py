@@ -12,6 +12,7 @@ from services.llm_service import LLMService
 from services.embedding_service import EmbeddingService
 from services.vector_store import VectorStore
 from review.report_generator import ReportGenerator
+from review.ai_review_parser import AIReviewParser
 
 class ReviewCoordinator:
     def __init__(self, project_files, extract_folder):
@@ -89,10 +90,19 @@ class ReviewCoordinator:
         prompt = prompt_builder.build(report, context)
 
         llm = LLMService()
-
         ai_review = llm.review(prompt)
 
-        report["ai_review"] = ai_review
+        print("========== RAW AI REVIEW ==========")
+        print(ai_review)
+
+        parser = AIReviewParser()
+
+        parsed_review = parser.parse(ai_review)
+
+        print("========== PARSED REVIEW ==========")
+        print(parsed_review)
+
+        report["ai_review"] = parsed_review
 
         print("CALLING REPORT GENERATOR")
 

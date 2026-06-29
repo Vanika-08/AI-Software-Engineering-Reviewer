@@ -1258,5 +1258,1702 @@
         },
         "ai_review": "## Project Review: Revfin Admin Panel (React Frontend)\n\n### 1. Overall Summary\n\nThis project appears to be a React-based administrative panel, showcasing a clear architectural structure with essential files and directories. It utilizes modern frontend technologies like React and leverages popular tools like ESLint and Prettier for code consistency, along with `tsconfig` which hints at potential TypeScript adoption.\n\nHowever, the review reveals **critical security vulnerabilities** that pose an immediate and severe risk to the application and potentially the entire infrastructure. These issues, coupled with numerous code quality and minor performance concerns, indicate a significant need for a comprehensive security audit, refactoring, and a stricter enforcement of development best practices. The project's current state is not suitable for a production environment without immediate and drastic remediation, especially concerning sensitive data handling.\n\n### 2. Strengths\n\n*   **Modern Frontend Stack:** The use of React for the frontend provides a robust and component-based foundation for building interactive user interfaces.\n*   **Structured Architecture:** The presence of `readme`, `.gitignore`, `package.json`, `src`, `public`, and `tests` directories indicates a thoughtful initial project setup, which is good for maintainability.\n*   **Developer Tooling:** The inclusion of `eslint`, `prettier`, and `tsconfig` demonstrates an awareness of tools that can enhance code quality and consistency, and potentially facilitate a migration to TypeScript.\n*   **Styled-Components:** The use of `styled-components` for styling (`Styled.js`) is a modern approach that promotes component-level styling and avoids global CSS conflicts.\n*   **Firebase Integration:** The existence of `firebase-messaging-sw.js` and `firebase.js` suggests integration with Firebase, which can provide scalable backend services for specific features.\n\n### 3. Weaknesses\n\n*   **Catastrophic Security Posture:** This is the most significant weakness. The pervasive hardcoding of highly sensitive information, including AWS Access Keys, AWS Secret Access Keys, API Keys, various tokens, and even passwords directly in the codebase (including `bitbucket-pipelines.yml` and `.js/.jsx` files), is an unacceptable and critical security flaw. This exposes the entire system to immediate compromise.\n*   **Lack of Environment Variable Management:** The absence of an `env_example` file directly correlates with the hardcoded secrets problem, indicating a complete lack of best practices for managing sensitive configuration data.\n*   **Poor Code Quality (Debugging Leftovers & Outdated Syntax):** Numerous `console.log` statements scattered throughout the codebase suggest incomplete development cycles or a lack of proper review and build processes to remove debug code. Widespread use of `var` instead of `let`/`const` indicates either an older codebase not updated to modern JavaScript standards or a failure to enforce modern linting rules.\n*   **Potential Performance Issues:** The use of `setInterval` in multiple components (`TvrQueue.jsx`, `RecordManagement.jsx`, `useTvrSocket.jsx`) without clear cleanup or robust error handling can lead to memory leaks, unnecessary resource consumption, and degraded user experience over time.\n*   **Reliance on External CDNs:** The `index.html` file directly links to multiple external CDN resources (jQuery, Bootstrap, CoreUI, Firebase), which can introduce performance overhead, single points of failure, and versioning challenges compared to local bundling.\n*   **Frontend-only Focus:** While this review focuses on the provided data, the lack of explicit backend or database information, coupled with `fake-backend.js`, suggests the backend might be a separate concern or not yet fully integrated/developed in a production-ready manner.\n\n### 4. Security Improvements\n\nThe security issues are paramount and require immediate attention.\n\n1.  **Immediate Credential Rotation:**\n    *   **Action:** Immediately rotate all hardcoded AWS Access Keys, AWS Secret Access Keys, API Keys, and any other secrets or tokens found in the repository. Assume all affected credentials have been compromised.\n    *   **Reason:** These credentials grant unauthorized access to critical infrastructure and services.\n\n2.  **Implement Robust Environment Variable Management:**\n    *   **Action:** Introduce a standard method for managing environment variables (e.g., using `.env` files with a library like `dotenv-webpack` for development, and injecting them securely at build/runtime in production).\n    *   **Reason:** Sensitive information must never be committed to source control.\n    *   **Best Practice:** Create an `env_example` file (without actual secrets) to document required environment variables and ensure `.env*` files are in `.gitignore`.\n\n3.  **Secure CI/CD Integration:**\n    *   **Action:** For `bitbucket-pipelines.yml`, utilize Bitbucket's secure pipeline variables feature to store and inject AWS credentials and other secrets at runtime, instead of hardcoding them.\n    *   **Reason:** CI/CD configuration files are part of source control and must not contain secrets.\n\n4.  **Token and API Key Handling:**\n    *   **Action:** Refactor all instances of hardcoded tokens and API keys. Load them from environment variables. For client-side API keys, understand the inherent risks; consider using a proxy server to hide the key from the client if it grants access to sensitive operations or data.\n    *   **Reason:** Prevents unauthorized access and simplifies key rotation.\n\n5.  **Password Management:**\n    *   **Action:** Address all hardcoded passwords in `.jsx` and `.js` files. For user authentication, passwords must always be hashed and salted on a secure backend and never stored or transmitted in plaintext. If these are system passwords, they must be environment variables.\n    *   **Reason:** Hardcoded passwords are a critical vulnerability, enabling easy unauthorized access.\n\n6.  **Static Application Security Testing (SAST):**\n    *   **Action:** Integrate SAST tools into the CI/CD pipeline (e.g., Snyk, SonarQube, Bandit) to automatically scan the codebase for security vulnerabilities, hardcoded secrets, and common misconfigurations before deployment.\n    *   **Reason:** Proactive detection of security flaws.\n\n7.  **Dependency Security Scanning:**\n    *   **Action:** Regularly run `npm audit` and integrate dependency scanning tools into the CI/CD pipeline to identify and address known vulnerabilities in third-party libraries.\n    *   **Reason:** Supply chain attacks via vulnerable dependencies are a common threat.\n\n### 5. Performance Improvements\n\n1.  **Manage `setInterval` Correctly:**\n    *   **Action:** Ensure all `setInterval` calls are accompanied by `clearInterval` in cleanup functions (e.g., `useEffect` return statements in React) to prevent memory leaks and unnecessary background processing when components unmount.\n    *   **Consideration:** Evaluate if `setInterval` is the best solution for real-time updates. WebSockets or server-sent events often provide a more efficient and responsive approach.\n\n2.  **Lazy Loading (Code Splitting):**\n    *   **Action:** Implement React's lazy loading (`React.lazy` and `Suspense`) for routes and non-critical components.\n    *   **Reason:** Reduces the initial bundle size, leading to faster page load times.\n\n3.  **Image Optimization:**\n    *   **Action:** Optimize images like `revfin_new_logo.png` and `underMaintenance.png` for web use (e.g., compress them, use modern formats like WebP, provide responsive images).\n    *   **Reason:** Large images can significantly slow down page load.\n\n4.  **Bundle Analysis:**\n    *   **Action:** Use a tool like Webpack Bundle Analyzer to visualize the bundle contents and identify large dependencies that could be optimized or replaced.\n    *   **Reason:** Helps in making informed decisions about code splitting and dependency management.\n\n5.  **Local Asset Management vs. CDNs:**\n    *   **Action:** For CoreUI, jQuery, and Bootstrap, consider bundling them locally with Webpack rather than relying solely on CDNs. While CDNs can offer caching benefits, local bundling provides more control, consistency, and can be optimized. Pin specific versions if CDNs are retained.\n    *   **Reason:** Reduces external dependencies, improves reliability, and allows for better build optimizations.\n\n### 6. Code Quality Suggestions\n\n1.  **Eliminate `console.log` Statements:**\n    *   **Action:** Remove all `console.log` statements from the production codebase. For debugging, use browser developer tools or a more sophisticated logging library configured to only log in development.\n    *   **Reason:** `console.log` can expose sensitive information, clutter the console, and slightly impact performance.\n\n2.  **Modern JavaScript Syntax (`let`/`const`):**\n    *   **Action:** Replace all instances of `var` with `let` or `const` as appropriate. `const` should be preferred for variables that do not change, `let` for those that do.\n    *   **Reason:** Improves scope management, reduces bugs, and aligns with modern JavaScript best practices.\n\n3.  **Strengthen ESLint Configuration:**\n    *   **Action:** Update the ESLint configuration to enforce rules for `let`/`const`, disallow `console.log` in production builds, enforce consistent React best practices (e.g., prop-types, hooks rules), and potentially add TypeScript-specific rules if a migration is planned.\n    *   **Reason:** Automates code quality checks and maintains consistency across the team.\n\n4.  **Component Refactoring and Reusability:**\n    *   **Action:** Review components for opportunities to break them down into smaller, more focused, and reusable units. Especially look at the chart initialization logic, which seems duplicated across `charts.js`, `main.js`, and `widgets.js`.\n    *   **Reason:** Improves maintainability, testability, and reduces redundancy.\n\n5.  **Error Handling and UI Feedback:**\n    *   **Action:** Implement consistent and user-friendly error handling mechanisms for API calls and other operations. Provide clear UI feedback for loading states, success, and errors.\n    *   **Reason:** Enhances user experience and makes the application more robust.\n\n6.  **TypeScript Adoption:**\n    *   **Action:** Given the presence of `tsconfig`, consider a phased migration to TypeScript for improved type safety, better tooling support, and enhanced long-term maintainability.\n    *   **Reason:** Catches bugs early, improves code readability and refactoring confidence.\n\n### 7. Final Score out of 100\n\n**Overall Score: 25/100**\n\n**Justification:**\n\n*   **Initial Setup & Architecture (15/15):** The project has a clear and sensible file structure with good initial tooling (README, .gitignore, package.json, src, public, tests, ESLint, Prettier, tsconfig).\n*   **Technology Stack (10/10):** React is a strong, modern choice for a frontend application.\n*   **Security (0/40):** This is the most critical area. The presence of hardcoded AWS Access Keys, Secret Access Keys, API Keys, various tokens, and passwords is an immediate and catastrophic failure. It signals a complete lack of security hygiene and poses an extreme risk. Without immediate and comprehensive remediation, the project is severely compromised.\n*   **Code Quality (5/20):** While ESLint and Prettier are present, the widespread use of `console.log` and `var` indicates either non-enforcement or a disregard for modern JavaScript practices and debugging hygiene. This points to a lack of code review rigor or proper build processes.\n*   **Performance (0/10):** The repeated use of `setInterval` without clear management points to potential memory leaks and inefficient resource use, which can severely degrade performance in a long-running application. The reliance on many external CDNs in `index.html` also raises concerns.\n*   **Best Practices (0/5):** The absence of an `env_example` file directly contributes to the critical security issues and shows a fundamental oversight in managing configuration.\n\nThe very low score is predominantly due to the severe security vulnerabilities. These issues must be addressed before any further feature development or deployment to a production environment. Once the security posture is significantly improved, the focus can shift more effectively to code quality and performance optimizations.",
         "total_chunks": 195
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": "## Overall Summary\n\nThis project is a Next.js frontend application, likely serving as a marketing or informational website for Revfin, focusing on EV loans and related services. It demonstrates a well-chosen modern frontend framework and a basic, organized project structure with some adherence to development best practices like ESLint and TypeScript. The use of environment variables for image asset paths (e.g., `process.env.NEXT_PUBLIC_REVFIN_IMAGE`) is a good practice.\n\nHowever, the project is severely undermined by critical security vulnerabilities, notably numerous instances of hardcoded secrets, passwords, tokens, and API keys. It also lacks a testing framework, exhibits several code quality issues like widespread console logs, and includes performance anti-patterns such as `innerHTML` and improperly managed `setInterval` calls.\n\n## Strengths\n\n-   **Modern Frontend Technology**: Leverages Next.js, a powerful React framework known for server-side rendering, static site generation, and performance optimizations.\n-   **Structured Architecture**: The project includes essential architectural elements such as `README`, `.gitignore`, `package.json`, `src`, and `public` directories, indicating a foundational level of organization.\n-   **Partial Best Practices Adoption**: ESLint and TypeScript configuration files (`.eslintrc.json`, `tsconfig.json`) are present, promoting code consistency and type safety. A `package-lock.json` ensures consistent dependency installations.\n-   **Environment Variable Usage (for static assets)**: The provided code snippets correctly use `process.env.NEXT_PUBLIC_REVFIN_IMAGE` for image paths, which is good practice for managing environment-dependent static asset URLs.\n\n## Weaknesses\n\n-   **Critical Security Flaws**: The most significant weakness is the presence of numerous hardcoded API keys, passwords, secrets, and tokens, posing an extreme security risk.\n-   **Absence of Automated Testing**: The lack of a `tests` directory indicates a complete absence of unit, integration, or end-to-end tests, making the application prone to regressions and difficult to maintain.\n-   **Missing Development Best Practices**: The project is missing a `Dockerfile`, an `env_example` file, and Prettier configuration. This hampers consistent development environments, makes local setup challenging for new contributors, and leads to inconsistent code formatting.\n-   **Performance Anti-patterns**: Usage of `innerHTML` and `setInterval` without proper management can lead to performance issues and potential security vulnerabilities.\n-   **Debugging Artifacts in Production Code**: Numerous `console.log` statements are present, which should ideally be removed from production builds.\n\n## Security Improvements\n\n-   **Immediate Secret Remediation**: All hardcoded tokens, passwords, secrets, and API keys (`package-lock.json`, `PrivacyPolicy.tsx`, `page.tsx`, `Map.tsx`, `Blogs.ts`) must be immediately moved out of the codebase.\n    -   Utilize environment variables (e.g., `.env.local` for development, and secure secret management services like AWS Secrets Manager, Azure Key Vault, or HashiCorp Vault for production).\n    -   Ensure sensitive environment variables are never committed to version control (`.gitignore` must properly exclude `.env*` files).\n-   **Secure API Key Usage**: For any client-side API keys (e.g., `Map.tsx`), ensure they are restricted by HTTP referrer or IP address to prevent unauthorized usage and quota exhaustion.\n-   **Regular Security Audits**: Implement static application security testing (SAST) tools in the CI/CD pipeline to automatically detect and flag hardcoded secrets and other vulnerabilities before deployment.\n-   **Cross-Site Scripting (XSS) Prevention**: The use of `innerHTML` can introduce XSS vulnerabilities if the content is not properly sanitized. Ensure all dynamic content rendered via `innerHTML` is thoroughly escaped or, preferably, use React's built-in JSX rendering capabilities.\n\n## Performance Improvements\n\n-   **Avoid `innerHTML`**: Replace instances of `innerHTML` with React's JSX for rendering content. If raw HTML is absolutely necessary, use `dangerouslySetInnerHTML` with extreme caution and ensure all content is strictly sanitized to prevent XSS.\n-   **Manage `setInterval` Carefully**: All instances of `setInterval` (`SliderwithTabs.tsx`, `SliderWith5Tabs.tsx`, `DownloadReport.tsx`, `CarouselSlider.tsx`) must be paired with `clearInterval` to prevent memory leaks and unnecessary background processes when components unmount or are no longer active. Consider alternatives like `requestAnimationFrame` for animations or debouncing/throttling for event handlers, where appropriate.\n\n## Code Quality Suggestions\n\n-   **Remove Console Logs**: Eliminate all `console.log` statements from production code. These are debugging tools and can reveal sensitive information or slightly degrade performance in deployed applications.\n-   **Implement Automated Testing**: Develop a comprehensive testing strategy.\n    -   **Unit Tests**: For individual components and utility functions.\n    -   **Integration Tests**: For critical application flows.\n    -   **End-to-End Tests**: For key user journeys, using tools like Playwright or Cypress.\n-   **Enforce Code Formatting**: Integrate and enforce Prettier to maintain a consistent code style across the entire codebase. This can be automated with pre-commit hooks.\n-   **Document Environment Variables**: Create an `env_example` file to clearly list and describe all required environment variables, making it easier for developers to set up the project locally.\n-   **Containerization with Docker**: Introduce a `Dockerfile` to create a consistent and isolated development and deployment environment, simplifying setup and ensuring reproducibility.\n\n## Final Verdict\n\nThis project presents a functional Next.js application with a decent foundational structure and some good practices, such as leveraging environment variables for static asset paths and including basic linting/TypeScript. However, it is critically flawed by severe security vulnerabilities, primarily the widespread presence of hardcoded secrets, passwords, API keys, and tokens. These issues make the application highly susceptible to breaches and unfit for production deployment in its current state. Coupled with a complete lack of automated testing, pervasive console logs, and performance anti-patterns, the project requires immediate and substantial remediation across security, quality, and performance domains. The first priority must be the complete eradication of all hardcoded sensitive information.\n\n## Final Score\n\n35/100",
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": "## Overall Summary\nThis project is a Next.js frontend application (`revfin-web`) with a clear directory structure and essential development configurations. It successfully utilizes environment variables for image assets, a good practice for dynamic content. However, the project is severely impacted by critical security vulnerabilities stemming from hardcoded secrets and numerous quality and performance issues that need immediate attention.\n\n## Strengths\n- Utilizes Next.js, a modern and performant React framework.\n- Good foundational project structure with `src`, `public`, `README.md`, and `.gitignore`.\n- Configuration files like `package.json`, `package-lock.json`, and `tsconfig.json` are present, indicating a structured setup.\n- ESLint is configured, promoting code consistency and catching potential errors.\n- Uses environment variables (`process.env.NEXT_PUBLIC_REVFIN_IMAGE`) for image paths, which is a good practice for dynamic asset management.\n\n## Weaknesses\n- **Critical Security Vulnerabilities:** Numerous hardcoded tokens, passwords, and API keys are present directly in the codebase, posing a severe security risk.\n- **Lack of Testing:** No testing framework or tests are implemented, which increases the risk of regressions and makes future development less reliable.\n- **Performance & Security Issues:** Extensive use of `innerHTML` can lead to Cross-Site Scripting (XSS) vulnerabilities and potential performance bottlenecks.\n- **Unmanaged `setInterval`:** Frequent use of `setInterval` without clear management (e.g., `clearInterval` on unmount) can lead to memory leaks and performance degradation.\n- **Poor Code Quality:** Many `console.log` statements are left in components, which clutters the console and can expose internal data in production.\n- **Missing Best Practices:** Lack of a `Dockerfile` for containerization, no `.env.example` for environment variable documentation, and Prettier is not configured for consistent code formatting.\n\n## Security Improvements\n- **Remove all hardcoded secrets immediately:** Migrate all API keys, tokens, passwords, and sensitive configurations to secure environment variables. For Next.js, these should be handled via `.env.local` for development and server-side environment variables in production.\n- **Implement `.env.example`:** Create an `.env.example` file to document all required environment variables without exposing their values, facilitating project setup for other developers.\n- **Sanitize dynamic content:** Carefully review all instances of `innerHTML` usage. If dynamic content from untrusted sources is being rendered, it must be thoroughly sanitized to prevent XSS attacks. Ideally, replace `innerHTML` with React's native safe rendering or a dedicated library for displaying trusted HTML.\n- **Review `package-lock.json` for sensitive data:** The \"Hardcoded Token\" issue in `package-lock.json` suggests sensitive data might have inadvertently been committed. Ensure no sensitive information is present in any version-controlled files.\n\n## Performance Improvements\n- **Replace `innerHTML` with safer and more performant alternatives:** Instead of `innerHTML`, use React's `dangerouslySetInnerHTML` only for trusted HTML, or better yet, render content using standard React components or a library like `react-markdown` if dealing with Markdown.\n- **Properly manage `setInterval`:** Ensure every `setInterval` call is paired with a corresponding `clearInterval` when the component unmounts or the effect is no longer needed to prevent memory leaks and unnecessary background processes. Consider using `requestAnimationFrame` for animations or event listeners for other periodic updates where appropriate.\n- **Optimize image loading:** Utilize Next.js's `Image` component for all images (`.png`, `.svg`) to benefit from automatic image optimization, lazy loading, and responsive sizing, which will significantly improve page load times.\n- **Remove unnecessary `console.log` statements:** These can impact performance and expose sensitive information in production. Configure ESLint to disallow `console.log` in production builds.\n\n## Code Quality Suggestions\n- **Implement a comprehensive testing suite:** Introduce unit tests (e.g., using Jest and React Testing Library) for components and integration tests for key user flows to ensure reliability and prevent regressions.\n- **Configure and enforce Prettier:** Integrate Prettier to automatically format code, ensuring consistent styling across the entire codebase and reducing merge conflicts related to formatting.\n- **Eliminate all `console.log` statements:** Remove all `console.log` calls from the production codebase.\n- **Regular security audits:** Conduct regular security audits, especially given the current vulnerabilities, to identify and mitigate potential risks.\n- **Consider a component library or design system:** For consistent UI/UX and faster development, especially with repetitive elements like cards and sliders, consider using or building a component library.\n\n## Final Verdict\nThis Next.js project has a solid structural foundation, but its critical security vulnerabilities, particularly hardcoded secrets, pose an unacceptable risk. Combined with significant quality debt from `console.log`s and performance concerns due to `innerHTML` and unmanaged `setInterval`s, the project requires an urgent and extensive refactoring effort. Without addressing these fundamental issues, it is not suitable for production deployment.\n\n## Final Score\n25",
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {
+            "Overall Summary": "This project is a Next.js frontend application with a basic architectural structure. While it utilizes environment variables for image assets and has some foundational best practices like a `README` and `tsconfig`, it suffers from severe security vulnerabilities due to numerous hardcoded secrets, passwords, and API keys. Additionally, the project lacks automated tests, contains excessive `console.log` statements, and frequently uses potentially unsafe or inefficient patterns like `innerHTML` and `setInterval`, indicating a need for significant refactoring and a stronger focus on security and quality.",
+            "Strengths": "-   Utilizes Next.js, a modern and performant React framework for frontend development.\n-   Basic project architecture is in place with `README`, `.gitignore`, `package.json`, `src`, and `public` directories.\n-   Properly configured `tsconfig` for TypeScript development, enhancing code reliability.\n-   ESLint is configured, indicating an effort towards maintaining code quality standards.\n-   Uses environment variables (`process.env.NEXT_PUBLIC_REVFIN_IMAGE`) for managing image paths, which is a good practice for configuration.",
+            "Weaknesses": "-   **Critical Security Vulnerabilities**: Numerous hardcoded tokens, passwords, secrets, and API keys are present directly in the codebase, posing an extreme risk.\n-   **Lack of Automated Testing**: The absence of any tests (unit, integration, or end-to-end) makes the application highly susceptible to regressions and difficult to maintain or refactor safely.\n-   **Poor Code Hygiene**: Excessive `console.log` statements are present throughout the codebase, indicating a lack of proper debugging practices and potential for information leakage in production.\n-   **Performance/Security Anti-patterns**: Frequent use of `innerHTML` can lead to Cross-Site Scripting (XSS) vulnerabilities and may have performance implications.\n-   **Potential Performance Issues**: Extensive use of `setInterval` without clear management can lead to memory leaks and unnecessary CPU cycles if not properly cleaned up.\n-   **Inconsistent Code Formatting**: The absence of Prettier suggests potential for inconsistent code style across the project, hindering collaboration.\n-   **Incomplete Development Setup**: Missing `Dockerfile` and `.env_example` files makes onboarding new developers or deploying consistently more challenging.\n-   No information provided regarding backend or database, making it difficult to assess the full scope of the application's data management and security.",
+            "Security Improvements": "-   **Immediately remove all hardcoded tokens, passwords, secrets, and API keys.** Migrate them to secure environment variables (e.g., using a `.env` file for local development and a secure secret management service in production), ensuring these files are never committed to version control.\n-   **Address the hardcoded token in `package-lock.json`**. Investigate how sensitive information ended up there and ensure `package-lock.json` only contains dependency information.\n-   **Replace `innerHTML` with safer alternatives** like `textContent` or React's `dangerouslySetInnerHTML` combined with strict input sanitization if dynamic HTML is absolutely necessary. Prioritize sanitization to prevent XSS attacks.",
+            "Performance Improvements": "-   **Review and optimize all `setInterval` usages.** Ensure that all intervals are cleared using `clearInterval` when the component unmounts or becomes irrelevant, to prevent memory leaks and unnecessary background processes.\n-   **Evaluate `innerHTML` usage for performance.** While the primary concern is security, rendering complex HTML via `innerHTML` can sometimes be less performant than React's optimized rendering mechanisms. Where appropriate, refactor to use JSX or components.\n-   Consider implementing lazy loading for images and components to improve initial page load times, especially for image-heavy sections like those configured in `homeConfig.ts` and `about.Config.ts`.",
+            "Code Quality Suggestions": "-   **Remove all `console.log` statements** from production code. Use a dedicated logging library or conditional logging for debugging purposes in development environments only.\n-   **Implement a comprehensive testing strategy.** Introduce unit tests for individual components/functions, integration tests for critical flows, and potentially end-to-end tests to ensure the application's stability and correctness.\n-   **Integrate Prettier** into the development workflow to enforce consistent code formatting automatically.\n-   **Create an `.env.example` file** to document all required environment variables for developers.\n-   **Consider adding a Dockerfile** to standardize the development, build, and deployment environments for improved consistency and reliability.",
+            "Final Verdict": "This project has a functional Next.js frontend, but its current state is highly concerning due to critical security vulnerabilities from hardcoded secrets and a complete lack of automated testing. While the architecture fundamentals are present, significant work is needed to address security, improve code quality, and ensure long-term maintainability and reliability.",
+            "Final Score": "30"
+        },
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {
+            "Overall Summary": "This project is a Next.js frontend application with no explicit backend or database detailed in the provided information. While it leverages environment variables for image paths, the project suffers from critical security vulnerabilities due to widespread hardcoded secrets, passwords, API keys, and tokens. Additionally, it exhibits significant code quality and performance issues, including the presence of numerous `console.log` statements, unsafe `innerHTML` usage, and reliance on `setInterval`. The absence of automated tests poses a substantial risk for future development and maintenance.",
+            "Strengths": "- Utilizes Next.js, a modern and performant React framework, which is a good technology choice for a frontend application.\n- Basic architectural elements like `readme`, `.gitignore`, `package.json`, `src`, and `public` directories are present.\n- Employs environment variables (`process.env.NEXT_PUBLIC_REVFIN_IMAGE`) for managing image paths, which is a good practice for configuration.\n- Includes `eslint` and `tsconfig` files, indicating an attempt at code quality and type safety.",
+            "Weaknesses": "- **Critical Security Flaws**: Numerous instances of hardcoded passwords, API keys, secrets, and tokens, posing severe security risks.\n- **Lack of Automated Testing**: Absence of any testing framework or tests (unit, integration, E2E) makes the codebase fragile and difficult to maintain.\n- **Poor Code Quality**: Extensive use of `console.log` statements, which should not be present in production code.\n- **Performance & Security Concerns**: Frequent use of `innerHTML` can lead to Cross-Site Scripting (XSS) vulnerabilities and potential performance degradation.\n- **Performance Concerns**: Multiple instances of `setInterval` might lead to unnecessary re-renders or performance bottlenecks if not managed carefully.\n- **Incomplete Best Practices**: Missing a `Dockerfile` for containerization, an `.env.example` for documenting environment variables, and `prettier` for consistent code formatting.",
+            "Security Improvements": "- **Remove All Hardcoded Secrets**: Immediately refactor to remove all hardcoded tokens, passwords, API keys, and secrets. Store them in secure environment variables (ensuring non-public ones are only used on the server-side in Next.js) or dedicated secret management services (e.g., HashiCorp Vault, AWS Secrets Manager).\n- **Sanitize and Avoid `innerHTML`**: Replace `innerHTML` with React's safe rendering methods (e.g., directly setting text content) or use a DOM sanitization library if rendering rich, untrusted HTML is absolutely necessary.\n- **Implement Secret Scanning**: Integrate secret scanning tools into the CI/CD pipeline to prevent future introduction of hardcoded credentials.\n- **Review `package-lock.json` for Tokens**: Investigate the 'Hardcoded Token' issue in `package-lock.json` to ensure no sensitive data is committed in lock files.",
+            "Performance Improvements": "- **Optimize Image Loading**: Replace manual image `src` attributes with the `next/image` component to leverage automatic image optimization, lazy loading, and responsive sizing.\n- **Refactor `setInterval` Usage**: Review all `setInterval` instances. For UI elements like sliders, consider using CSS animations, Intersection Observer, or requestAnimationFrame for smoother and more performant updates, or ensure `setInterval`s are properly cleaned up on component unmount to prevent memory leaks.\n- **Implement Code Splitting**: Leverage Next.js's automatic code splitting and dynamic imports (`next/dynamic`) for components that are not critical for the initial page load to reduce bundle size.",
+            "Code Quality Suggestions": "- **Eliminate `console.log`**: Remove all `console.log` statements from production code. Use a dedicated logging library or tool for debugging and error tracking.\n- **Introduce Automated Testing**: Implement a comprehensive testing strategy including unit tests (e.g., Jest, React Testing Library), integration tests, and end-to-end tests (e.g., Cypress, Playwright) to ensure code reliability.\n- **Implement Code Formatting**: Integrate Prettier to enforce consistent code formatting across the project.\n- **Add `.env.example`**: Create an `.env.example` file to document all required environment variables for local development and deployment.\n- **Consider Dockerization**: Add a `Dockerfile` for consistent development, testing, and production environments.\n- **Review Component Structure**: Ensure consistent component structure, data passing, and state management practices.",
+            "Final Verdict": "This project is in a precarious state due to severe security vulnerabilities, particularly the extensive hardcoding of sensitive credentials. Coupled with a complete lack of automated testing, significant code quality issues, and performance concerns, it presents a high risk. A substantial refactoring effort is urgently needed, starting with addressing all security flaws and implementing robust testing, before any further feature development.",
+            "Final Score": "25"
+        },
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {
+            "Overall Summary": "This Next.js frontend project exhibits a foundational architecture with key components like a README and version control. However, it is plagued by severe security vulnerabilities, including numerous instances of hardcoded sensitive data. The project also suffers from a significant lack of automated testing, pervasive `console.log` statements, and performance issues related to `innerHTML` and `setInterval` usage. Addressing these critical areas is paramount for the project's long-term viability and security.",
+            "Strengths": "- Utilizes a modern and robust frontend framework, Next.js, indicating a forward-thinking technology choice.\n- Basic architectural elements like `README.md`, `.gitignore`, `package.json`, `src`, and `public` folders are present.\n- Includes ESLint and TypeScript configuration, promoting code consistency and type safety.\n- Employs environment variables (`process.env.NEXT_PUBLIC_REVFIN_IMAGE`) for configuring dynamic image paths, allowing for flexibility in asset management.",
+            "Weaknesses": "- **Critical Security Flaws**: Contains multiple instances of hardcoded tokens, passwords, secrets, and API keys, posing severe security risks.\n- **Absence of Tests**: Lacks any automated tests (unit, integration, or end-to-end), making the codebase fragile, difficult to maintain, and prone to regressions.\n- **Development Hygiene**: Presence of numerous `console.log` statements in production code indicates a lack of proper linting rules or review processes.\n- **Performance/Security Anti-patterns**: Extensive use of `innerHTML` can introduce XSS vulnerabilities and is often less performant, while `setInterval` can lead to memory leaks and inefficient animations if not managed correctly.\n- **Missing Development Best Practices**: Lacks a `Dockerfile` for consistent deployment, an `.env.example` file for clear environment variable documentation, and Prettier for automated code formatting.",
+            "Security Improvements": "- Immediately remove all hardcoded tokens, passwords, secrets, and API keys from the codebase. Store them securely in environment variables (e.g., `.env` files) for development and use a dedicated secrets management service (e.g., AWS Secrets Manager, Azure Key Vault, HashiCorp Vault) in production.\n- Review `package-lock.json` and all dependencies for known vulnerabilities using tools like `npm audit` or Snyk.\n- Replace all instances of `innerHTML` with `dangerouslySetInnerHTML` only when absolutely necessary and ensure all content is thoroughly sanitized to prevent Cross-Site Scripting (XSS) attacks. Prioritize standard JSX rendering over `dangerouslySetInnerHTML` where possible.\n- Implement security scanning tools into the CI/CD pipeline to automatically detect similar vulnerabilities in the future.",
+            "Performance Improvements": "- Refactor components using `innerHTML` to use standard React/Next.js rendering methods (JSX). If dynamic HTML is truly required, use `dangerouslySetInnerHTML` with extreme caution and proper content sanitization.\n- Review and refactor `setInterval` usages. For animations, consider `requestAnimationFrame` for better performance and resource management. For periodic tasks, ensure intervals are cleared on component unmount to prevent memory leaks.\n- Implement Next.js `Image` component for all images, especially those loaded via `process.env.NEXT_PUBLIC_REVFIN_IMAGE`, to leverage automatic optimization, lazy loading, and responsive image handling.\n- Conduct a performance audit using Lighthouse or similar tools to identify other potential bottlenecks in asset loading, bundle size, and rendering.",
+            "Code Quality Suggestions": "- Implement a comprehensive testing strategy, starting with unit tests for critical components and utilities, followed by integration and end-to-end tests.\n- Remove all `console.log` statements. If debugging is needed, use a proper logging library or conditional logging that is stripped in production builds.\n- Integrate Prettier into the development workflow and CI/CD pipeline to ensure consistent code formatting across the entire project.\n- Establish clear component design patterns and folder structures to improve maintainability and scalability.\n- For image paths, consider if `public` folder could host truly static images without needing environment variables, or ensure the `NEXT_PUBLIC_REVFIN_IMAGE` points to a CDN for optimal performance.",
+            "Final Verdict": "This Next.js project is at a very early stage regarding production readiness. The presence of critical security vulnerabilities, complete lack of testing, and numerous quality and performance issues necessitate a substantial overhaul. A focused effort on addressing these fundamental problems is essential before any further feature development.",
+            "Final Score": "35"
+        },
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {},
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {},
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {},
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {},
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {},
+        "total_chunks": 176
+    },
+    {
+        "technologies": {
+            "frontend": "Next.js",
+            "backend": null,
+            "database": null
+        },
+        "structure": {
+            "src": true,
+            "components": true,
+            "pages": false,
+            "services": true,
+            "utils": false,
+            "hooks": true,
+            "assets": true
+        },
+        "quality": [
+            {
+                "file": "sdg_values_july/revfin-web/src/components/ContactCard/ContactCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/NoteCard/NoteCard.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Revshaala/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video/Video.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/video2/Video2.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/FourWheelerVehicleBanner/FourWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/ThreeWheelerVehicleBanner/ThreeWheelerVehicleBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/VehicleBanner/EVAncillaryBanner/EVAncillaryBanner.tsx",
+                "issue": "Console Log Found"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Testimonials/page.tsx",
+                "issue": "Console Log Found"
+            }
+        ],
+        "security": [
+            {
+                "file": "sdg_values_july/revfin-web/package-lock.json",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/privacy-policy/PrivacyPolicy.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Secret"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/app/terms-and-conditions/page.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded Password"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/Map/Map.tsx",
+                "severity": "HIGH",
+                "issue": "Hardcoded API Key"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/services/Blogs/Blogs.ts",
+                "severity": "MEDIUM",
+                "issue": "Hardcoded Token"
+            }
+        ],
+        "performance": [
+            {
+                "file": "sdg_values_july/revfin-web/src/app/layout.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/round.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/hover-button.jsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderwithTabs/SliderwithTabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/SliderWith5Tabs/SliderWith5Tabs.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/faqs/ExpandableTabs.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/DownloadReport/DownloadReport.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/components/homePage/progress/CarouselSlider.tsx",
+                "issue": "setInterval Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/FAQs/FAQDetail.tsx",
+                "issue": "innerHTML Used"
+            },
+            {
+                "file": "sdg_values_july/revfin-web/src/customPages/Resources/blogs/new-blog/page.tsx",
+                "issue": "innerHTML Used"
+            }
+        ],
+        "architecture": {
+            "readme": true,
+            "gitignore": true,
+            "package_json": true,
+            "src": true,
+            "public": true,
+            "tests": false
+        },
+        "best_practices": {
+            "readme": true,
+            "gitignore": true,
+            "dockerfile": false,
+            "env_example": false,
+            "eslint": true,
+            "prettier": false,
+            "package_lock": true,
+            "tsconfig": true
+        },
+        "score": {
+            "overall_score": 14
+        },
+        "ai_review": {
+            "Overall Summary": "This project is a Next.js frontend application with a basic architectural setup. While it leverages modern frontend technology and some best practices like `eslint` and `tsconfig`, it suffers from critical security vulnerabilities due to widespread hardcoded secrets, API keys, passwords, and tokens. Additionally, there are numerous code quality issues such as excessive `console.log` statements and performance concerns stemming from the use of `innerHTML` and `setInterval`. The absence of automated tests poses a significant risk to maintainability and stability.",
+            "Strengths": "- Utilizes Next.js, a modern and popular React framework for building performant web applications.\n- Basic project architecture elements like `README.md`, `.gitignore`, `package.json`, `src`, and `public` folders are in place.\n- Environment variables (`process.env.NEXT_PUBLIC_REVFIN_IMAGE`) are correctly used for non-sensitive public asset paths, as seen in the provided code snippets.\n- Presence of ESLint and TypeScript configuration (`eslint`, `tsconfig`) indicates some attention to code quality and type safety.",
+            "Weaknesses": "- **Critical Security Flaws**: Numerous instances of hardcoded API keys, passwords, tokens, and secrets across various files, including client-side code, posing severe security risks.\n- Lack of automated tests, which increases the likelihood of bugs and makes refactoring difficult.\n- Extensive use of `console.log` statements, which are typically removed in production builds, indicating a lack of production readiness.\n- Reliance on `innerHTML` for rendering content, which is a known security vulnerability (XSS) if not properly sanitized, and can lead to performance issues.\n- Use of `setInterval` for animations or updates, which can be unoptimized and cause performance jank, especially in sliders.\n- Missing key development best practices such as a `Dockerfile` for consistent environments, an `.env.example` file to document required environment variables, and `prettier` for consistent code formatting.",
+            "Security Improvements": "- **Immediately remove all hardcoded sensitive information**: This includes API keys, passwords, tokens, and secrets identified in the security report.\n- Implement a robust environment variable strategy: Use `.env.local` files for local development (and ensure they are git-ignored) and securely inject environment variables during the build and deployment process (e.g., using platform-specific secrets management).\n- Re-architect any client-side calls that require sensitive API keys/tokens: Frontend code should generally not directly hold or use secrets for backend services. Instead, a dedicated backend API should proxy these requests, handling authentication and authorization securely.\n- Thoroughly sanitize all dynamic content before assigning it to `innerHTML` to prevent Cross-Site Scripting (XSS) attacks. Consider using a dedicated library or frameworks' safer alternatives like `dangerouslySetInnerHTML` with extreme caution and validation.",
+            "Performance Improvements": "- Replace `setInterval` with more performant and controlled animation methods: For UI elements like sliders, prefer CSS transitions/animations, `requestAnimationFrame`, or leverage existing Next.js/React component libraries that handle animations efficiently. Ensure timers are cleared on component unmount.\n- Minimize or eliminate `innerHTML` usage: This can trigger costly re-renders and direct DOM manipulation bypasses React's virtual DOM, potentially leading to performance bottlenecks. Use JSX and React's component model for rendering dynamic content where possible.",
+            "Code Quality Suggestions": "- Remove all `console.log` statements: Implement a conditional logging system that only logs in development environments or use a proper logging library for production.\n- Introduce automated testing: Implement unit, integration, and end-to-end tests to ensure code correctness, prevent regressions, and improve developer confidence.\n- Configure and enforce Prettier: Integrate Prettier into the development workflow to ensure consistent code formatting across the entire project.\n- Create an `.env.example` file: Document all required environment variables, making it easier for new developers to set up the project.\n- Consider adding a Dockerfile: Even for frontend projects, a Dockerfile can ensure a consistent build and deployment environment, simplifying CI/CD pipelines.",
+            "Final Verdict": "This project demonstrates a foundational understanding of modern frontend development with Next.js but is severely hampered by critical security vulnerabilities and significant quality and performance issues. The presence of hardcoded credentials makes this application highly insecure and unsuitable for production without immediate and extensive remediation. Addressing these core problems is paramount for the project's long-term viability and security posture.",
+            "Final Score": "25"
+        },
+        "total_chunks": 176
     }
 ]

@@ -1,4 +1,7 @@
 function AIReviewCard({ review }) {
+
+  if (!review) return null;
+
   return (
     <div
       className="card shadow p-4 mt-4 hide-scrollbar"
@@ -6,21 +9,33 @@ function AIReviewCard({ review }) {
         maxHeight: "500px",
         overflowY: "auto",
         textAlign: "left",
-        whiteSpace: "pre-wrap",
       }}
     >
       <h4 className="mb-4">
         🤖 AI Review
       </h4>
 
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          lineHeight: "1.7",
-        }}
-      >
-        {review}
-      </div>
+      {Object.entries(review).map(([heading, content]) => (
+        <div key={heading} className="mb-4">
+
+          <h5 className="fw-bold">
+            {heading}
+          </h5>
+
+          <p
+            style={{
+              whiteSpace: "pre-wrap",
+              lineHeight: "1.7",
+            }}
+          >
+            {content}
+          </p>
+
+          <hr />
+
+        </div>
+      ))}
+
     </div>
   );
 }

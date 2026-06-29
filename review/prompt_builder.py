@@ -28,13 +28,36 @@ Best Practices:
 Relevant Code:
 {context}
 
-Generate a professional review containing:
+Generate your response ONLY in the following Markdown format.
 
-1. Overall Summary
-2. Strengths
-3. Weaknesses
-4. Security Improvements
-5. Performance Improvements
-6. Code Quality Suggestions
-7. Final Score out of 100
+## Overall Summary
+Write a short summary of the project in 3-5 sentences.
+
+## Strengths
+- Bullet point
+- Bullet point
+- Bullet point
+
+## Weaknesses
+- Bullet point
+- Bullet point
+- Bullet point
+
+## Security Improvements
+- Bullet point
+- Bullet point
+
+## Performance Improvements
+- Bullet point
+- Bullet point
+
+## Code Quality Suggestions
+- Bullet point
+- Bullet point
+
+## Final Verdict
+Write a concise overall verdict in 2-3 sentences.
+
+## Final Score
+Return ONLY a number between 0 and 100.
 """
