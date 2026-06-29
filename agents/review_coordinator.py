@@ -43,6 +43,12 @@ class ReviewCoordinator:
         best_practices_detector = BestPracticesDetector(self.extract_folder)
         best_practices = best_practices_detector.detect()
 
+        print("Quality Issues:", len(quality))
+        print("Security Issues:", len(security))
+        print("Performance Issues:", len(performance))
+        print("Architecture:", architecture)
+        print("Best Practices:", best_practices)
+
         score_calculator = ScoreCalculator()
 
         score = score_calculator.calculate(

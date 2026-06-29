@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 function AIReviewCard({ review }) {
 
   if (!review) return null;
@@ -28,7 +29,7 @@ function AIReviewCard({ review }) {
               lineHeight: "1.7",
             }}
           >
-            {content}
+            <ReactMarkdown>{content}</ReactMarkdown>
           </p>
 
           <hr />

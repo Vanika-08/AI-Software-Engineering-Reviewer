@@ -35,7 +35,15 @@ class ProjectReader:
             "__pycache__",
             ".next",
             ".idea",
-            ".vscode"
+            ".vscode",
+            "docs"
+        }
+
+        ignore_files = {
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml",
+            "bun.lockb"
         }
 
         allowed_extensions = {
@@ -63,11 +71,20 @@ class ProjectReader:
             if any(folder in file.parts for folder in ignore_folders):
                 continue
 
+            if file.name in ignore_files:
+                continue
+
             if file.suffix.lower() not in allowed_extensions:
                 continue
 
+            if file.stat().st_size > 1024 * 1024:   # 1 MB
+                continue
+
             try:
-                content = file.read_text(encoding="utf-8")
+                content = file.read_text(
+                    encoding="utf-8",
+                    errors="ignore"
+                )
 
                 print(file.relative_to(extracted_folder))
 

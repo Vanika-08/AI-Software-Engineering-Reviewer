@@ -24,11 +24,14 @@ class CodeQualityDetector:
 
             for keyword, message in QUALITY_RULES.items():
 
-                if keyword in content:
+                count = content.count(keyword)
+
+                if count > 0:
 
                     issues.append({
                         "file": path,
-                        "issue": message
+                        "issue": message,
+                        "count": count
                     })
 
-        return issues
+        return issues  

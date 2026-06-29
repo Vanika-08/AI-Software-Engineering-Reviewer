@@ -50,6 +50,10 @@ async def upload_project(file: UploadFile = File(...)):
 
     report = coordinator.run()
 
+    report["id"] = str(uuid.uuid4())
+    
+    report["created_at"] = datetime.now().strftime("%d-%m-%Y %H:%M")
+
     store = ReviewStore()
 
     store.save(report)
@@ -76,3 +80,14 @@ def get_reviews():
     store = ReviewStore()
 
     return store.get_all()
+
+@app.delete("/reviews/{review_id}")
+def delete_review(review_id: str):
+
+    store = ReviewStore()
+
+    store.delete(review_id)
+
+    return {
+        "message": "Review deleted successfully"
+    }

@@ -11,14 +11,21 @@ class ScoreCalculator:
 
         score = 100
 
-        score -= len(quality) * 2
-        score -= len(security) * 5
-        score -= len(performance) * 3
+        # Maximum penalty = 20
+        score -= min(len(quality), 10) * 2
 
+        # Maximum penalty = 35
+        score -= min(len(security), 7) * 5
+
+        # Maximum penalty = 15
+        score -= min(len(performance), 5) * 3
+
+        # Best Practices
         for value in best_practices.values():
             if not value:
                 score -= 2
 
+        # Architecture
         for value in architecture.values():
             if not value:
                 score -= 2

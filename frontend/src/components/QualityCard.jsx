@@ -8,32 +8,25 @@ function QualityCard({ quality }) {
       }}
     >
       <div className="d-flex justify-content-between align-items-center mb-3">
-  <h4>Code Quality</h4>
+        <h4>Code Quality</h4>
 
-  <span className="badge bg-secondary">
-    {quality.length}
-  </span>
-</div>
+        <span className="badge bg-secondary">{quality.length}</span>
+      </div>
 
       {quality.length === 0 ? (
-        <p className="text-success mt-3">
-          ✅ No Code Quality Issues
-        </p>
+        <p className="text-success mt-3">✅ No Code Quality Issues</p>
       ) : (
         quality.map((issue, index) => (
-          <div
-            key={index}
-            className="border rounded p-2 mb-3"
-          >
-            <span className="badge bg-primary mb-2">
-              {issue.issue}
-            </span>
+          <div key={index} className="border rounded p-2 mb-3">
+            <span className="badge bg-primary">{issue.issue}</span>
 
-            <br />
+            <div className="small text-muted mt-2">
+              {issue.count} occurrence{issue.count > 1 ? "s" : ""}
+            </div>
 
-            <small className="text-muted">
+            <div className="small mt-2 text-break">
               {issue.file.split("/").slice(-2).join("/")}
-            </small>
+            </div>
           </div>
         ))
       )}
