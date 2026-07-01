@@ -14,6 +14,8 @@ import ComplexityCard from "../components/ComplexityCard";
 import DuplicateCodeCard from "../components/DuplicateCodeCard";
 import DeadCodeCard from "../components/DeadCodeCard";
 import NamingCard from "../components/NamingCard";
+import DocumentationCard from "../components/DocumentationCard";
+import TestCard from "../components/TestCard";
 import toast from "react-hot-toast";
 
 function UploadPage() {
@@ -132,13 +134,17 @@ function UploadPage() {
                 </div>
 
                 <div className="col-md-6">
-  <DeadCodeCard
-    deadCode={result.dead_code}
-  />
-</div>
-<div className="col-md-6">
-    <NamingCard naming={result.naming} />
-</div>
+                  <DeadCodeCard deadCode={result.dead_code} />
+                </div>
+                <div className="col-md-6">
+                  <NamingCard naming={result.naming} />
+                </div>
+
+                <DocumentationCard documentation={result.documentation} />
+
+                <div className="col-md-6">
+                  <TestCard tests={result.tests} />
+                </div>
 
                 <div className="col-12">
                   <ArchitectureCard architecture={result.architecture} />

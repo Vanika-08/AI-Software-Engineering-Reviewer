@@ -8,6 +8,8 @@ class ScoreCalculator:
         complexity,
         duplicate_code,
         dead_code,
+        documentation,
+        tests,
         naming,
         best_practices,
         architecture
@@ -35,6 +37,13 @@ class ScoreCalculator:
 
         # Naming Convention (Maximum penalty = 10)
         score -= min(len(naming), 5) * 2
+
+        # Documentation (Maximum penalty = 10)
+        score -= min(len(documentation),5)*2
+
+        # Test Coverage (Maximum penalty = 10)
+        if tests and tests[0]["framework"] == "None":
+            score -= 5
 
         # Best Practices (Maximum penalty depends on checks)
         for value in best_practices.values():

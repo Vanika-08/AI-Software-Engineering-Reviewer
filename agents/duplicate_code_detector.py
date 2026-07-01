@@ -1,4 +1,4 @@
-from difflib import SequenceMatcher
+import hashlib
 
 
 class DuplicateCodeDetector:
@@ -10,31 +10,31 @@ class DuplicateCodeDetector:
 
         issues = []
 
-        for i in range(len(self.project_files)):
+        seen_hashes = {}
 
-            file1 = self.project_files[i]
+        for project_file in self.project_files:
 
-            for j in range(i + 1, len(self.project_files)):
+            content = project_file["content"].strip()
 
-                file2 = self.project_files[j]
+            # Ignore very small files
+            if len(content) < 300:
+                continue
 
-                similarity = SequenceMatcher(
-                    None,
-                    file1["content"],
-                    file2["content"]
-                ).ratio()
+            file_hash = hashlib.sha256(
+                content.encode("utf-8")
+            ).hexdigest()
 
-                if (
-                    len(file1["content"]) > 300
-                    and len(file2["content"]) > 300
-                    and similarity >= 0.90
-                ):
+            if file_hash in seen_hashes:
 
-                    issues.append({
-                        "file1": file1["path"],
-                        "file2": file2["path"],
-                        "similarity": round(similarity * 100, 2),
-                        "issue": "Duplicate Code Detected"
-                    })
+                issues.append({
+                    "file1": seen_hashes[file_hash],
+                    "file2": project_file["path"],
+                    "similarity": 100,
+                    "issue": "Duplicate Code Detected"
+                })
+
+            else:
+
+                seen_hashes[file_hash] = project_file["path"]
 
         return issues

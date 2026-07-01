@@ -1,7 +1,9 @@
 from pathlib import Path
 import zipfile
 
+
 class ProjectReader:
+
     def __init__(self, upload_id):
         self.upload_id = upload_id
         self.upload_path = Path("uploads") / upload_id
@@ -9,18 +11,18 @@ class ProjectReader:
     def extract_zip(self):
 
         zip_file = self.upload_path / "original.zip"
+
         extract_folder = self.upload_path / "extracted"
+
         extract_folder.mkdir(exist_ok=True)
+
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             zip_ref.extractall(extract_folder)
 
         print("Extracted to:", extract_folder)
 
-        for item in extract_folder.rglob("*"):
-            print(item)
-
         return extract_folder
-    
+
     def read_project_files(self):
 
         extracted_folder = self.upload_path / "extracted"
@@ -28,43 +30,125 @@ class ProjectReader:
         project_files = []
 
         ignore_folders = {
-            "node_modules",
+
+            # Git
             ".git",
+
+            # Node
+            "node_modules",
+
+            # Python
+            "venv",
+            ".venv",
+            "env",
+            "__pycache__",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".tox",
+
+            # React / Next
+            ".next",
             "dist",
             "build",
-            "__pycache__",
-            ".next",
+
+            # IDE
             ".idea",
             ".vscode",
-            "docs"
+
+            # Java
+            "target",
+            ".gradle",
+
+            # Flutter
+            ".dart_tool",
+
+            # Android
+            ".android",
+
+            # iOS
+            "Pods",
+
+            # Coverage
+            "coverage"
         }
 
         ignore_files = {
+
+            # Node
             "package-lock.json",
             "yarn.lock",
             "pnpm-lock.yaml",
-            "bun.lockb"
+            "bun.lockb",
+
+            # Python
+            "poetry.lock",
+            "Pipfile.lock",
+
+            # Misc
+            ".DS_Store",
+            "Thumbs.db"
         }
 
         allowed_extensions = {
+
+            # Python
             ".py",
+
+            # JavaScript
             ".js",
             ".jsx",
             ".ts",
             ".tsx",
+
+            # Java
             ".java",
+            ".kt",
+
+            # C/C++
+            ".c",
+            ".cpp",
+            ".h",
+            ".hpp",
+
+            # C#
+            ".cs",
+
+            # PHP
+            ".php",
+
+            # Go
+            ".go",
+
+            # Rust
+            ".rs",
+
+            # Ruby
+            ".rb",
+
+            # Swift
+            ".swift",
+
+            # Frontend
             ".html",
             ".css",
             ".scss",
+
+            # Config
             ".json",
-            ".md",
             ".xml",
             ".yml",
             ".yaml",
-            ".properties"
+            ".properties",
+
+            # Database
+            ".sql",
+
+            # Documentation
+            ".md"
         }
 
         for file in extracted_folder.rglob("*"):
+
             if not file.is_file():
                 continue
 
@@ -77,23 +161,24 @@ class ProjectReader:
             if file.suffix.lower() not in allowed_extensions:
                 continue
 
-            if file.stat().st_size > 1024 * 1024:   # 1 MB
-                continue
-
             try:
+
                 content = file.read_text(
                     encoding="utf-8",
                     errors="ignore"
                 )
 
-                print(file.relative_to(extracted_folder))
-
                 project_files.append({
+
                     "path": str(file.relative_to(extracted_folder)),
                     "content": content
+
                 })
 
             except Exception:
+
                 continue
+
+        print(f"Loaded {len(project_files)} source files")
 
         return project_files

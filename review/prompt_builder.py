@@ -34,6 +34,12 @@ Dead Code:
 Naming Convention:
 {report["naming"]}
 
+Documentation:
+{report["documentation"]}
+
+Testing:
+{report["tests"]}
+
 Best Practices:
 {report["best_practices"]}
 

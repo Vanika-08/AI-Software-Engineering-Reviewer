@@ -1,43 +1,5 @@
 import re
 
-SECURITY_PATTERNS = [
-    (
-        re.compile(r'(api[_-]?key)\s*[:=]\s*["\'][^"\']+["\']', re.IGNORECASE),
-        "HIGH",
-        "Hardcoded API Key"
-    ),
-    (
-        re.compile(r'(secret)\s*[:=]\s*["\'][^"\']+["\']', re.IGNORECASE),
-        "HIGH",
-        "Hardcoded Secret"
-    ),
-    (
-        re.compile(r'(password)\s*[:=]\s*["\'][^"\']+["\']', re.IGNORECASE),
-        "HIGH",
-        "Hardcoded Password"
-    ),
-    (
-        re.compile(r'(token)\s*[:=]\s*["\'][^"\']+["\']', re.IGNORECASE),
-        "MEDIUM",
-        "Hardcoded Token"
-    ),
-    (
-        re.compile(r'-----BEGIN\s+PRIVATE\s+KEY-----'),
-        "CRITICAL",
-        "Private Key Found"
-    ),
-    (
-        re.compile(r'aws_access_key_id\s*[:=]\s*["\'][^"\']+["\']', re.IGNORECASE),
-        "CRITICAL",
-        "AWS Access Key Found"
-    ),
-    (
-        re.compile(r'aws_secret_access_key\s*[:=]\s*["\'][^"\']+["\']', re.IGNORECASE),
-        "CRITICAL",
-        "AWS Secret Access Key Found"
-    )
-]
-
 
 class SecurityDetector:
 
@@ -48,19 +10,121 @@ class SecurityDetector:
 
         issues = []
 
+        patterns = [
+
+            # ----------------------------
+            # Hardcoded Secrets
+            # ----------------------------
+
+            (r'api[_-]?key\s*[:=]\s*["\'][^"\']+["\']',
+             "HIGH",
+             "Hardcoded API Key"),
+
+            (r'secret\s*[:=]\s*["\'][^"\']+["\']',
+             "HIGH",
+             "Hardcoded Secret"),
+
+            (r'password\s*[:=]\s*["\'][^"\']+["\']',
+             "HIGH",
+             "Hardcoded Password"),
+
+            (r'token\s*[:=]\s*["\'][^"\']+["\']',
+             "MEDIUM",
+             "Hardcoded Token"),
+
+            # ----------------------------
+            # Cloud/API Keys
+            # ----------------------------
+
+            (r'AKIA[0-9A-Z]{16}',
+             "CRITICAL",
+             "AWS Access Key"),
+
+            (r'ghp_[A-Za-z0-9]{36}',
+             "CRITICAL",
+             "GitHub Personal Access Token"),
+
+            (r'AIza[0-9A-Za-z\-_]{35}',
+             "HIGH",
+             "Google API Key"),
+
+            (r'sk-[A-Za-z0-9]{20,}',
+             "HIGH",
+             "OpenAI API Key"),
+
+            (r'-----BEGIN PRIVATE KEY-----',
+             "CRITICAL",
+             "Private Key Found"),
+
+            # ----------------------------
+            # Dangerous Functions
+            # ----------------------------
+
+            (r'\beval\s*\(',
+             "HIGH",
+             "Use of eval()"),
+
+            (r'\bexec\s*\(',
+             "HIGH",
+             "Use of exec()"),
+
+            (r'new\s+Function\s*\(',
+             "HIGH",
+             "Use of new Function()"),
+
+            (r'pickle\.loads',
+             "HIGH",
+             "Unsafe pickle.loads()"),
+
+            (r'subprocess\..*shell\s*=\s*True',
+             "HIGH",
+             "subprocess(shell=True) detected"),
+
+            (r'Runtime\.getRuntime\(\)\.exec',
+             "HIGH",
+             "Runtime.exec() detected"),
+
+            (r'child_process\.exec',
+             "HIGH",
+             "child_process.exec() detected"),
+
+            # ----------------------------
+            # XSS
+            # ----------------------------
+
+            (r'innerHTML\s*=',
+             "MEDIUM",
+             "innerHTML assignment"),
+
+            (r'document\.write\s*\(',
+             "MEDIUM",
+             "document.write()"),
+
+            # ----------------------------
+            # CORS
+            # ----------------------------
+
+            (r'Access-Control-Allow-Origin.*\*',
+             "MEDIUM",
+             "Wildcard CORS"),
+
+        ]
+
         for project_file in self.project_files:
 
             path = project_file["path"]
             content = project_file["content"]
 
-            for pattern, severity, message in SECURITY_PATTERNS:
+            for regex, severity, message in patterns:
 
-                if pattern.search(content):
+                if re.search(regex, content, re.IGNORECASE):
 
                     issues.append({
+
                         "file": path,
                         "severity": severity,
                         "issue": message
+
                     })
 
         return issues
